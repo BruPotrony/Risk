@@ -172,6 +172,7 @@ namespace Risk
 
                 path.Fill = brush;
 
+
                 _originalFills[path] = brush;
             }
         }
