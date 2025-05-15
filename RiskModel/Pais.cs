@@ -20,6 +20,10 @@ namespace RiskModel
         [JsonPropertyName("image")]
         public string Imatge { get; set; }
         public List<Pais> Fronteres { get; set; } = new ();
+
+        public int Tropes { get; set; }
+        public Jugador? PaisDeJugador { get; set; } = null;
+
     }
 
 }

@@ -213,10 +213,6 @@ namespace RiskServerConnection
                         IdPlayerLeftRecived?.Invoke(idPlayerLeft);
                         break;
 
-                    case "game_started":
-                        gameStateRecived?.Invoke(GameState.GameStarted);
-                        break;
-
                     case "map_update":
                         if (root.TryGetProperty("countries", out var countriesElem)
                             && countriesElem.ValueKind == JsonValueKind.Array)

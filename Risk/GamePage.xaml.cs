@@ -27,6 +27,7 @@ namespace Risk
         private readonly Dictionary<Path, Brush> _originalFills = new Dictionary<Path, Brush>();
 
         List<Continent> continents = new List<Continent>();
+
         private Dictionary<long, Path> _countryPathMap = new Dictionary<long, Path>();
 
         public readonly GameService _gameService;
@@ -160,9 +161,36 @@ namespace Risk
 
         private async void country_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+
+            if (currentPartida.TornPlayer.SkfUser.Id != IniPage.currentUser.Id)
+            {
+                MessageBox.Show("Espera al teu torn!");
+                return;
+            }
+
             var path = (Path)sender;
             if (path.DataContext is Pais country)
             {
+
+                if (currentPartida.EstatPartida == GameState.NotStarted)
+                {
+                    var allCountries = continents.SelectMany(c => c.paisos).ToList();
+                    bool hiHaSenseOcupar = allCountries.Any(p => p.PaisDeJugador == null);
+                    if (hiHaSenseOcupar && country.PaisDeJugador!=null && country.PaisDeJugador.Id==currentPartida.TornPlayer.Id)
+                    {
+                        MessageBox.Show("Has d'ocupar tots els països abans de començar la reforçar!");
+                        return;
+                    }
+                    
+                    if (country.PaisDeJugador!=null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
+                    {
+                        MessageBox.Show("Has d'ocupar un Pais teu!");
+                        return;
+                    }
+                    
+
+                }
+
                 await _gameService.SendOccupationAsync(country.Id,1);
 
                 var brush = GetBrushForPlayer(currentPartida.TornPlayer.Id);
@@ -319,7 +347,6 @@ namespace Risk
                 OnPlayersChanged(new List<long> { IniPage.currentUser.Id });
             }
 
-            currentPartida.Okupa = new List<Okupa>();
         }
 
         private void OnGameStateChanged(GameState estat)
@@ -338,23 +365,11 @@ namespace Risk
                     {
                         if (path.DataContext is Pais country)
                         {
-                            var okupa = currentPartida.Okupa.FirstOrDefault(o => o.Pais.Id == countryId);
-                            if (okupa == null)
-                            {
-                                okupa = new Okupa
-                                {
-                                    Pais = country,
-                                    Tropes = troops,
-                                    Jugador = playerId.HasValue? currentPartida.Jugadors.FirstOrDefault(j => j.Id == playerId.Value): null
-                                };
+                            country.Tropes = troops;
+                            country.PaisDeJugador = playerId.HasValue
+                                ? currentPartida.Jugadors.FirstOrDefault(j => j.Id == playerId.Value)
+                                : null;
 
-                                currentPartida.Okupa.Add(okupa);
-                            }
-                            else
-                            {
-                                okupa.Tropes = troops;
-                                okupa.Jugador = playerId.HasValue? currentPartida.Jugadors.FirstOrDefault(j => j.Id == playerId.Value): null;
-                            }
 
                             if (playerId != null)
                             {

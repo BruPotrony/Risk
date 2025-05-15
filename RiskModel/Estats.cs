@@ -9,9 +9,11 @@ namespace RiskModel
 {
     public enum GameState
     {
-        GameStarted,
-        Playing,
-        GameEnd
+        NotStarted,
+
+        Attaking,
+        Occupation,
+        Reforce
     }
 
 }

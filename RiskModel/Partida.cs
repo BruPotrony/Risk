@@ -24,13 +24,11 @@ namespace RiskModel
         public List<Okupa> Okupa { get; set; }
 
         [JsonIgnore]
-        public long EstatTorn { get; set; }
-        [JsonIgnore]
         public Jugador Admin { get; set; }
         [JsonIgnore]
         public Jugador TornPlayer { get; set; }
         [JsonIgnore]
-        public GameState EstatPartida { get; set; }
+        public GameState EstatPartida { get; set; } = GameState.NotStarted;
 
 
 
