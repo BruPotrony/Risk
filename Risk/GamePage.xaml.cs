@@ -123,7 +123,7 @@ namespace Risk
                 {
                     LoadingOverlay.Visibility = Visibility.Collapsed;
 
-                    if (_countryPathMap!=null || _countryPathMap.Count == 0)
+                    if (_countryPathMap != null || _countryPathMap.Count == 0)
                     {
                         carregarDades();
                     }
@@ -510,7 +510,7 @@ namespace Risk
 
             currentPartida.Jugadors = new List<Jugador>();
 
-            
+
 
             _gameService.PlayerListReceived += OnPlayersChanged;
             _gameService.IdTornRecived += OnTornChanged;
@@ -538,7 +538,7 @@ namespace Risk
 
         private async void OnTerritoryConqueredRecived()
         {
-            if (fromCountry!=null && fromCountry.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+            if (fromCountry != null && fromCountry.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
             {
                 int tropesMoure;
                 do
@@ -600,7 +600,7 @@ namespace Risk
         {
             currentPartida.EstatPartida = estat;
 
-            if (currentPartida.TornPlayer.SkfUser.Id != IniPage.currentUser.Id  && GameState.Attaking == currentPartida.EstatPartida)
+            if (currentPartida.TornPlayer.SkfUser.Id != IniPage.currentUser.Id && GameState.Attaking == currentPartida.EstatPartida)
             {
                 btnSegTorn.Visibility = Visibility.Visible;
 

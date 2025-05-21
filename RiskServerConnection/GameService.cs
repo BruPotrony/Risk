@@ -209,7 +209,7 @@ namespace RiskServerConnection
 
                     case "player_turn":
                         long id;
-                        id=root.GetProperty("playerId").GetInt64();
+                        id = root.GetProperty("playerId").GetInt64();
                         IdTornRecived?.Invoke(id);
                         break;
 
@@ -270,7 +270,7 @@ namespace RiskServerConnection
                             case "REFORCE":
                                 gameStateRecived?.Invoke(GameState.Reforce);
                                 break;
-                            }
+                        }
                         break;
 
                     case "map_update":
@@ -320,6 +320,7 @@ namespace RiskServerConnection
             };
             string json = JsonSerializer.Serialize(payload, options);
             await _ws.SendAsync(json);
+
         }
 
 
@@ -343,7 +344,7 @@ namespace RiskServerConnection
             };
 
             string json = JsonSerializer.Serialize(payload, options);
-            await _ws.SendAsync(json);          
+            await _ws.SendAsync(json);
 
 
         }
@@ -439,6 +440,6 @@ namespace RiskServerConnection
 
         public void Dispose() => _ws.Dispose();
 
-        
+
     }
 }
