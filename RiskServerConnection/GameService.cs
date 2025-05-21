@@ -371,6 +371,25 @@ namespace RiskServerConnection
         }
 
 
+        public async Task SendEndAttackingAsync()
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "end_attack"
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);
+        }
 
         public void Dispose() => _ws.Dispose();
 

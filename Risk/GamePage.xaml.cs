@@ -40,8 +40,8 @@ namespace Risk
             Brushes.MediumPurple
         };
 
-        public Pais? paisAtacant = null;
-        public Pais? paisDefensor = null;
+        public Pais? fromCountry = null;
+        public Pais? toCountry = null;
 
         private readonly Dictionary<long, Brush> _playerBrushMap = new Dictionary<long, Brush>();
 
@@ -195,68 +195,90 @@ namespace Risk
 
                 if (currentPartida.EstatPartida == GameState.NotStarted)
                 {
-                    bool hiHaSenseOcupar = allCountries.Any(p => p.PaisDeJugador == null);
-                    if (hiHaSenseOcupar && country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
-                    {
-                        MessageBox.Show("Has d'ocupar tots els països abans de començar la reforçar!");
-                        return;
-                    }
-
-                    if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
-                    {
-                        MessageBox.Show("Has d'ocupar un Pais teu!");
-                        return;
-                    }
-
-                    await _gameService.SendOccupationAsync(country.Id, 1);
-                    country.Tropes += 1;
-                    country.PaisDeJugador = currentPartida.TornPlayer;
-                    pintarPais(path);
+                    await llogicaJocNoComencat(path, country, allCountries);
 
                 }
                 else if (currentPartida.EstatPartida == GameState.Attaking)
                 {
-                    if (paisAtacant == null)
+                    await llogicaAtac(country);
+                }
+                else if (currentPartida.EstatPartida == GameState.Reforce)
+                {
+                    if (country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                     {
-                        getPaisAtacant(country);
-                        if (paisAtacant == null) return;
+                        int tropesReforçar = getTroops(country, "Tropes a reforçar");
+                        if (tropesReforçar == -1) return;
 
-                        HighlightAttackableNeighbors(paisAtacant);
-                        return;
+                        
                     }
                     else
                     {
-                        bool esPaisVei = paisAtacant.Fronteres.Any(vei => vei.Id == country.Id);
-
-                        if (country.PaisDeJugador.Id==currentPartida.TornPlayer.Id)
-                        {
-                            paisAtacant = null;
-                            getPaisAtacant(country);
-                            if (paisAtacant == null) return;
-
-                            HighlightAttackableNeighbors(paisAtacant);
-                            return;
-                        }
-                        else
-                        {
-                            if (esPaisVei)
-                            {
-                                int tropesAtacants = getTroops(paisAtacant, "Tropes Atacants");
-                                paisDefensor = country;
-                                await _gameService.SendAttackAsync(paisAtacant.Id,paisDefensor.Id,tropesAtacants);
-                            }
-                            else
-                            {
-                                MessageBox.Show("Has d'atacar un pais veí!");
-                            }
-                        }
+                        MessageBox.Show("Has de reforçar un pais teu!");
                     }
-
-
                 }
 
-                
+
             }
+        }
+
+        private async Task llogicaAtac(Pais country)
+        {
+            if (fromCountry == null)
+            {
+                getPaisAtacant(country);
+                if (fromCountry == null) return;
+
+                HighlightAttackableNeighbors(fromCountry);
+                return;
+            }
+            else
+            {
+                bool esPaisVei = fromCountry.Fronteres.Any(vei => vei.Id == country.Id);
+
+                if (country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+                {
+                    fromCountry = null;
+                    getPaisAtacant(country);
+                    if (fromCountry == null) return;
+
+                    HighlightAttackableNeighbors(fromCountry);
+                    return;
+                }
+                else
+                {
+                    if (esPaisVei)
+                    {
+                        int tropesAtacants = getTroops(fromCountry, "Tropes Atacants");
+                        toCountry = country;
+                        await _gameService.SendAttackAsync(fromCountry.Id, toCountry.Id, tropesAtacants);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Has d'atacar un pais veí!");
+                    }
+                }
+            }
+        }
+
+        private async Task llogicaJocNoComencat(Path path, Pais country, List<Pais> allCountries)
+        {
+            bool hiHaSenseOcupar = allCountries.Any(p => p.PaisDeJugador == null);
+            if (hiHaSenseOcupar && country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+            {
+                MessageBox.Show("Has d'ocupar tots els països abans de començar la reforçar!");
+                return;
+            }
+
+            if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
+            {
+                MessageBox.Show("Has d'ocupar un Pais teu!");
+                return;
+            }
+
+            await _gameService.SendOccupationAsync(country.Id, 1);
+            country.Tropes += 1;
+            country.PaisDeJugador = currentPartida.TornPlayer;
+            pintarPais(path);
         }
 
         private int getTroops(Pais country, string tittle)
@@ -314,7 +336,7 @@ namespace Risk
 
         private void getPaisAtacant(Pais country)
         {
-            if (paisAtacant != null)
+            if (fromCountry != null)
                 return;
 
             if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
@@ -327,9 +349,9 @@ namespace Risk
                 MessageBox.Show("Has d'atacar des d'un pais amb mes d'una tropa!");
                 return;
             }
-            if (paisAtacant == null)
+            if (fromCountry == null)
             {
-                paisAtacant = country;
+                fromCountry = country;
             }
         }
 
@@ -493,12 +515,12 @@ namespace Risk
 
         private async void OnTerritoryConqueredRecived()
         {
-            if (paisAtacant.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+            if (fromCountry!=null && fromCountry.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
             {
                 int tropesMoure;
                 do
                 {
-                    tropesMoure = getTroops(paisAtacant, "Tropes a moure");
+                    tropesMoure = getTroops(fromCountry, "Tropes a moure");
                     if (tropesMoure == -1)
                     {
                         MessageBox.Show("Has de seleccionar les tropes a moure");
@@ -513,10 +535,10 @@ namespace Risk
 
         private void OnAttackInitialized(long obj)
         {
-            paisDefensor = continents
+            toCountry = continents
                         .SelectMany(c => c.paisos)
                         .FirstOrDefault(p => p.Id == obj);
-            Debug.WriteLine($"Pais defensor: {paisDefensor?.Nom} ({paisDefensor?.Id})");
+            Debug.WriteLine($"Pais defensor: {toCountry?.Nom} ({toCountry?.Id})");
         }
 
         private void OnDiceAttackChanged(List<int> attackerDice, List<int> defenderDice)
@@ -536,7 +558,7 @@ namespace Risk
             var diceAttack = new DiceAtack
             {
                 Atacant = currentPartida.TornPlayer,
-                Defensor = paisDefensor.PaisDeJugador,
+                Defensor = toCountry.PaisDeJugador,
                 tirades = paired
             };
 
@@ -561,19 +583,32 @@ namespace Risk
             {
                 case GameState.Attaking:
 
-                    paisAtacant = null;
-                    paisDefensor = null;
+                    fromCountry = null;
+                    toCountry = null;
 
                     txbInformatiu.Text = "Ataca un pais veí!";
 
-                    txbMessageOverlay.Text = "Comença la Guerra!";
+                    txbMessageOverlay.Text = "Fase d'atac";
                     MessageOverlay.Visibility = Visibility.Visible;
 
                     await Task.Delay(TimeSpan.FromSeconds(3));
 
                     MessageOverlay.Visibility = Visibility.Collapsed;
                     break;
+
+                case GameState.Reforce:
+                    txbInformatiu.Text = "Reforça els països!";
+
+                    txbMessageOverlay.Text = "Fase de reforç";
+                    MessageOverlay.Visibility = Visibility.Visible;
+
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+
+                    MessageOverlay.Visibility = Visibility.Collapsed;
+                    break;
+
             }
+
         }
 
         private void FillCountryPathMap()
@@ -658,9 +693,9 @@ namespace Risk
 
         }
 
-        private void btn_next_turn_click(object sender, RoutedEventArgs e)
+        private async void btn_next_turn_click(object sender, RoutedEventArgs e)
         {
-
+            await _gameService.SendEndAttackingAsync();
         }
     }
 }
