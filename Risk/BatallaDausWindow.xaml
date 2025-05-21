@@ -1,0 +1,95 @@
+﻿<Window x:Class="Risk.BatallaDausWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Risk"
+        mc:Ignorable="d"
+        Title="BatallaDausWindow" Height="450" Width="400"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        x:Name="wind">
+    
+            <Border
+           CornerRadius="15"
+           BorderThickness="4"
+           BorderBrush="White"
+           SnapsToDevicePixels="True"
+         x:Name="borderTauler"
+         Cursor="Hand">
+        <Border.Background>
+            <ImageBrush ImageSource="Assets/tauler_fusta_partides.png"
+           Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="0.3*"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <TextBlock Foreground="{Binding ElementName=wind, Path=MyDiceAttack.Atacant.ColorBrush}" Text="ATACANT" FontWeight="ExtraBold" FontSize="25"
+                   VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20"></TextBlock>
+
+            <TextBlock Foreground="{Binding ElementName=wind, Path=MyDiceAttack.Defensor.ColorBrush}" Text="DEFENSOR" Grid.Column="2" FontWeight="ExtraBold" FontSize="25"
+                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20"></TextBlock>
+
+
+            <ItemsControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                      x:Name="DiceItemsControl"
+                ItemsSource="{Binding ElementName=wind, Path=MyDiceAttack.tirades}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="0.3*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Image x:Name="imgAttack"
+                                   Width="50" Height="50"
+                                   Grid.Column="0"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Margin="0,30"/>
+
+                                <Image x:Name="imgDefend"
+                                   Width="50" Height="50"
+                                   Grid.Column="2"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Margin="0,30"/>
+                            </Grid>
+
+
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Grid.Column="1" Margin="0,20" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Center" CornerRadius="4" BorderBrush="White" BorderThickness="3"></Border>
+
+            <TextBlock 
+            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" FontWeight="ExtraBold" FontSize="25"
+                   VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20" Text="" Visibility="Collapsed"/>
+
+        </Grid>
+    </Border>
+</Window>

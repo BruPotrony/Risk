@@ -7,9 +7,12 @@
       mc:Ignorable="d" 
       d:DesignHeight="1020" d:DesignWidth="1980"
       Title="GamePage"
-      Background="#3dbdbb"
       Loaded="Page_Loaded"
       Name="page">
+
+    <Page.Background>
+        <ImageBrush ImageSource="Assets/taula_fusta.png" Stretch="UniformToFill"/>
+    </Page.Background>
 
     <Page.Resources>
         <Style x:Key="RoundedButtonStyle" TargetType="Button">
@@ -52,9 +55,13 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
-        
-    <Viewbox Grid.ColumnSpan="2"  Name="countries" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+        <Border BorderBrush="White" Background="CadetBlue" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="6" CornerRadius="20" SnapsToDevicePixels="True">
+
+            
+            <Viewbox Grid.ColumnSpan="2"  Name="countries" HorizontalAlignment="Right" VerticalAlignment="Center">
             <Canvas UseLayoutRounding="False" Width="749.81909" Height="519.06781" HorizontalAlignment="Right">
                 <Canvas.Clip>
                     <RectangleGeometry Rect="0,0,749.81909,519.06781"/>
@@ -606,11 +613,23 @@
 
             </Canvas>
         </Viewbox>
+        </Border>
 
 
+        <Border BorderThickness="5" BorderBrush="White" CornerRadius="4" Grid.Row="1" Grid.Column="1" Height="100" Width="350" Visibility="Visible" Margin="0,0,0,20">
+            <Border.Background>
+                <ImageBrush ImageSource="Assets/taula_fusta.png"
+                    Stretch="UniformToFill" />
+            </Border.Background>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Text="Fase de població" FontSize="25" Foreground="White"
+                       x:Name="txbInformatiu" FontWeight="Bold" FontStyle="Oblique"></TextBlock>
+        </Border>
 
 
         <Button Click="btn_sortir_click" Grid.Row="1" Grid.Column="1" Content="Sortir" Margin="20" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Right" Width="140" Height="45"/>
+
+        <Button Click="btn_next_turn_click" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Content="Seguent Torn" Margin="0,0,0,20" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Center" Width="180" Height="45"/>
 
         <Grid x:Name="LoadingOverlay"
           Background="#99000000"
@@ -618,7 +637,7 @@
             HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
               Grid.ColumnSpan="2"
-              Grid.RowSpan="2"
+              Grid.RowSpan="3"
           Panel.ZIndex="1">
             <StackPanel Orientation="Vertical"
                   HorizontalAlignment="Center"
@@ -657,11 +676,37 @@
             </StackPanel>
         </Grid>
 
+
+
+        <Grid x:Name="MessageOverlay"
+              Background="#99000000"
+              Visibility="Collapsed" 
+                HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+                  Grid.ColumnSpan="2"
+                  Grid.RowSpan="3"
+              Panel.ZIndex="1">
+            <StackPanel Orientation="Vertical"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Margin="20">
+                <TextBlock Text="Fase d'atac"
+                           x:Name="txbMessageOverlay"
+                   Foreground="White"
+                   FontSize="150"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,10"/>
+
+            </StackPanel>
+
+        </Grid>
+
         <ListView 
                   Grid.Column="0"
-                  HorizontalAlignment="Left"
-                    Grid.RowSpan="2"
-                  VerticalAlignment="Bottom"
+                  HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            
                   ItemsSource="{Binding ElementName=page, Path=currentPartida.Jugadors}"    
                   x:Name="lsvJugadors"
                         Background="Transparent"
@@ -694,7 +739,7 @@
 
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <views:UCListPlayers MyJugador="{Binding}" Height="100"  Width="350" Margin="0,0,0,5"/>
+                    <views:UCListPlayers MyJugador="{Binding}" Height="100"  Width="350" Margin="0,0,0,2"/>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>

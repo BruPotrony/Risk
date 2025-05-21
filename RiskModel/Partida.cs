@@ -22,7 +22,6 @@ namespace RiskModel
         public int currentPlayers { get; set; }
         public List<Jugador> Jugadors { get; set; }
         public List<Okupa> Okupa { get; set; }
-
         [JsonIgnore]
         public Jugador Admin { get; set; }
         [JsonIgnore]

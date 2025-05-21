@@ -12,6 +12,12 @@
     <None Remove="Assets\arrow_down.png" />
     <None Remove="Assets\arrow_up.png" />
     <None Remove="Assets\crossed-swords-icon.png" />
+    <None Remove="Assets\dice-1.png" />
+    <None Remove="Assets\dice-2.png" />
+    <None Remove="Assets\dice-3.png" />
+    <None Remove="Assets\dice-4.png" />
+    <None Remove="Assets\dice-5.png" />
+    <None Remove="Assets\dice-6.png" />
     <None Remove="Assets\Riskgame_logo.png" />
     <None Remove="Assets\risk_portada.png" />
     <None Remove="Assets\taula_fusta.png" />
@@ -37,6 +43,24 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\crossed-swords-icon.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-3.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-4.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-5.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\dice-6.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\Riskgame_logo.png">

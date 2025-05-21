@@ -40,6 +40,9 @@ namespace Risk
             Brushes.MediumPurple
         };
 
+        public Pais? paisAtacant = null;
+        public Pais? paisDefensor = null;
+
         private readonly Dictionary<long, Brush> _playerBrushMap = new Dictionary<long, Brush>();
 
         public Partida currentPartida
@@ -119,8 +122,11 @@ namespace Risk
                 if (currentPartida.currentPlayers == currentPartida.maxPlayers)
                 {
                     LoadingOverlay.Visibility = Visibility.Collapsed;
-                    carregarDades();
-                    comencarPartida();
+
+                    if (_countryPathMap!=null || _countryPathMap.Count == 0)
+                    {
+                        carregarDades();
+                    }
                 }
             });
         }
@@ -136,10 +142,6 @@ namespace Risk
             }
         }
 
-        private void comencarPartida()
-        {
-            
-        }
 
         private void country_MouseEnter(object sender, MouseEventArgs e)
         {
@@ -151,6 +153,7 @@ namespace Risk
 
         private void country_MouseLeave(object sender, MouseEventArgs e)
         {
+
             var path = (Path)sender;
             if (_originalFills.TryGetValue(path, out var originalBrush))
             {
@@ -158,6 +161,23 @@ namespace Risk
                 _originalFills.Remove(path);
             }
         }
+
+        private readonly Dictionary<Path, Brush> _originalStrokes = new();
+        private readonly Dictionary<Path, double> _originalStrokeThickness = new();
+
+        private void RestoreAllBorders()
+        {
+            foreach (var kv in _originalStrokes)
+            {
+                var path = kv.Key;
+                path.Stroke = kv.Value;
+                path.StrokeThickness = _originalStrokeThickness[path];
+            }
+
+            _originalStrokes.Clear();
+            _originalStrokeThickness.Clear();
+        }
+
 
         private async void country_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
@@ -171,40 +191,149 @@ namespace Risk
             var path = (Path)sender;
             if (path.DataContext is Pais country)
             {
+                var allCountries = continents.SelectMany(c => c.paisos).ToList();
 
                 if (currentPartida.EstatPartida == GameState.NotStarted)
                 {
-                    var allCountries = continents.SelectMany(c => c.paisos).ToList();
                     bool hiHaSenseOcupar = allCountries.Any(p => p.PaisDeJugador == null);
-                    if (hiHaSenseOcupar && country.PaisDeJugador!=null && country.PaisDeJugador.Id==currentPartida.TornPlayer.Id)
+                    if (hiHaSenseOcupar && country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                     {
                         MessageBox.Show("Has d'ocupar tots els països abans de començar la reforçar!");
                         return;
                     }
-                    
-                    if (country.PaisDeJugador!=null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
+
+                    if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
                     {
                         MessageBox.Show("Has d'ocupar un Pais teu!");
                         return;
                     }
-                    
+
+                    await _gameService.SendOccupationAsync(country.Id, 1);
+                    country.Tropes += 1;
+                    country.PaisDeJugador = currentPartida.TornPlayer;
+                    pintarPais(path);
+
+                }
+                else if (currentPartida.EstatPartida == GameState.Attaking)
+                {
+                    if (paisAtacant == null)
+                    {
+                        getPaisAtacant(country);
+                        if (paisAtacant == null) return;
+
+                        HighlightAttackableNeighbors(paisAtacant);
+                        return;
+                    }
+                    else
+                    {
+                        bool esPaisVei = paisAtacant.Fronteres.Any(vei => vei.Id == country.Id);
+
+                        if (country.PaisDeJugador.Id==currentPartida.TornPlayer.Id)
+                        {
+                            paisAtacant = null;
+                            getPaisAtacant(country);
+                            if (paisAtacant == null) return;
+
+                            HighlightAttackableNeighbors(paisAtacant);
+                            return;
+                        }
+                        else
+                        {
+                            if (esPaisVei)
+                            {
+                                int tropesAtacants = getTroops(paisAtacant, "Tropes Atacants");
+                                paisDefensor = country;
+                                await _gameService.SendAttackAsync(paisAtacant.Id,paisDefensor.Id,tropesAtacants);
+                            }
+                            else
+                            {
+                                MessageBox.Show("Has d'atacar un pais veí!");
+                            }
+                        }
+                    }
+
 
                 }
 
-                await _gameService.SendOccupationAsync(country.Id,1);
-
-                var brush = GetBrushForPlayer(currentPartida.TornPlayer.Id);
-
-                if (!_originalFills.ContainsKey(path))
-                    _originalFills[path] = path.Fill;
-
-                path.Fill = brush;
-
-                _originalFills[path] = brush;
+                
             }
         }
 
-        private async void carregarDades()
+        private int getTroops(Pais country, string tittle)
+        {
+            ContadorTropesAtac contador = new ContadorTropesAtac(country, tittle);
+            if (contador.ShowDialog() == true)
+            {
+                int tropes = contador.troopsCount;
+
+                return tropes;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        private void pintarPais(Path path)
+        {
+            var brush = GetBrushForPlayer(currentPartida.TornPlayer.Id);
+
+            if (!_originalFills.ContainsKey(path))
+                _originalFills[path] = path.Fill;
+
+            path.Fill = brush;
+
+            _originalFills[path] = brush;
+        }
+
+        private void HighlightAttackableNeighbors(Pais country)
+        {
+            RestoreAllBorders();
+
+            var myId = currentPartida.TornPlayer.Id;
+            foreach (var vei in country.Fronteres)
+            {
+                if (vei.PaisDeJugador?.Id != myId
+                    && _countryPathMap.TryGetValue(vei.Id, out var veiPath))
+                {
+                    if (!_originalStrokes.ContainsKey(veiPath))
+                    {
+                        _originalStrokes[veiPath] = veiPath.Stroke;
+                        _originalStrokeThickness[veiPath] = veiPath.StrokeThickness;
+                    }
+
+                    veiPath.Stroke = Brushes.White;
+                    veiPath.StrokeThickness = 4;
+                }
+            }
+        }
+
+
+
+
+
+        private void getPaisAtacant(Pais country)
+        {
+            if (paisAtacant != null)
+                return;
+
+            if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
+            {
+                MessageBox.Show("Has d'atacar des d'un pais teu!");
+                return;
+            }
+            if (country.Tropes == 1)
+            {
+                MessageBox.Show("Has d'atacar des d'un pais amb mes d'una tropa!");
+                return;
+            }
+            if (paisAtacant == null)
+            {
+                paisAtacant = country;
+            }
+        }
+
+        private async Task carregarDades()
         {
             if (Application.Current.MainWindow is MainWindow mainWin)
             {
@@ -255,14 +384,7 @@ namespace Risk
                     }
                 }
 
-                _countryPathMap = MapCanvas.Children
-               .OfType<Path>()
-               .Where(p => p.Tag != null && long.TryParse(p.Tag.ToString(), out _))
-               .GroupBy(p => long.Parse(p.Tag.ToString()))
-               .ToDictionary(
-                   grp => grp.Key,
-                   grp => grp.First()
-               );
+                FillCountryPathMap();
 
 
                 AfegirNumerosAlCentre();
@@ -278,48 +400,63 @@ namespace Risk
             {
                 var countryId = kvp.Key;
                 var path = kvp.Value;
-                Rect bounds = path.RenderedGeometry.Bounds;
 
+                if (!(path.DataContext is Pais country))
+                    continue;
+                string texto = country.Tropes.ToString();
+
+                Rect bounds = path.RenderedGeometry.Bounds;
                 double xCentro = bounds.X + bounds.Width / 2;
                 double yCentro = bounds.Y + bounds.Height / 2;
 
-                var label = new TextBlock
-                {
-                    Text = "0",
-                    FontSize = 12,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = Brushes.Black,
-                    IsHitTestVisible = false,
-                    Tag = countryId
-                };
-
-                label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                var sizeLabel = label.DesiredSize;
-                double left = xCentro - sizeLabel.Width / 2;
-                double top = yCentro - sizeLabel.Height / 2;
-
+                double left = xCentro;
+                double top = yCentro;
                 switch (countryId)
                 {
-                    case 2: top += 10; break;  
-                    case 10: left -= 4; top -= 4; break; 
-                    case 13: left -= 9; break; 
+                    case 2: top += 10; break;
+                    case 10: left -= 4; top -= 4; break;
+                    case 13: left -= 9; break;
                     case 12: left += 9; break;
                     case 15: left += 9; break;
                     case 23: left += 10; break;
                     case 42: left += 9; break;
-                    case 33: left += 9; break; 
+                    case 33: left += 9; break;
                     case 30: top -= 33; break;
                     case 19: top -= 10; break;
-
-
                 }
-                Canvas.SetLeft(label, left);
-                Canvas.SetTop(label, top);
-                MapCanvas.Children.Add(label);
 
-                _countryLabelMap[countryId] = label;
+                if (_countryLabelMap.TryGetValue(countryId, out var existingLabel))
+                {
+                    existingLabel.Text = texto;
+                    existingLabel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    var size = existingLabel.DesiredSize;
+                    Canvas.SetLeft(existingLabel, left - size.Width / 2);
+                    Canvas.SetTop(existingLabel, top - size.Height / 2);
+                }
+                else
+                {
+                    var label = new TextBlock
+                    {
+                        Text = texto,
+                        FontSize = 12,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = Brushes.Black,
+                        IsHitTestVisible = false,
+                        Tag = countryId
+                    };
+
+                    label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    var sizeLabel = label.DesiredSize;
+
+                    Canvas.SetLeft(label, left - sizeLabel.Width / 2);
+                    Canvas.SetTop(label, top - sizeLabel.Height / 2);
+                    MapCanvas.Children.Add(label);
+
+                    _countryLabelMap[countryId] = label;
+                }
             }
         }
+
 
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -328,12 +465,17 @@ namespace Risk
 
             currentPartida.Jugadors = new List<Jugador>();
 
+            
 
             _gameService.PlayerListReceived += OnPlayersChanged;
             _gameService.IdTornRecived += OnTornChanged;
             _gameService.IdPlayerLeftRecived += OnPlayerLeft;
             _gameService.MapUpdatedRecived += OnMapUpdated;
             _gameService.gameStateRecived += OnGameStateChanged;
+            _gameService.DiceAttackRecived += OnDiceAttackChanged;
+            _gameService.attackInitializedRecived += OnAttackInitialized;
+            _gameService.territoryConqueredRecived += OnTerritoryConqueredRecived;
+
 
             _gameService.StartListening();
 
@@ -349,14 +491,115 @@ namespace Risk
 
         }
 
-        private void OnGameStateChanged(GameState estat)
+        private async void OnTerritoryConqueredRecived()
         {
-            currentPartida.EstatPartida = estat;
+            if (paisAtacant.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+            {
+                int tropesMoure;
+                do
+                {
+                    tropesMoure = getTroops(paisAtacant, "Tropes a moure");
+                    if (tropesMoure == -1)
+                    {
+                        MessageBox.Show("Has de seleccionar les tropes a moure");
+                    }
+                }
+                while (tropesMoure == -1);
+
+                await _gameService.SendMoveTroopsAsync(tropesMoure);
+            }
         }
 
-        private void OnMapUpdated(List<(long countryId, int troops, long? playerId)> list)
+
+        private void OnAttackInitialized(long obj)
         {
-            
+            paisDefensor = continents
+                        .SelectMany(c => c.paisos)
+                        .FirstOrDefault(p => p.Id == obj);
+            Debug.WriteLine($"Pais defensor: {paisDefensor?.Nom} ({paisDefensor?.Id})");
+        }
+
+        private void OnDiceAttackChanged(List<int> attackerDice, List<int> defenderDice)
+        {
+            var paired = new List<Dice>();
+            int max = Math.Max(attackerDice.Count, defenderDice.Count);
+
+            for (int i = 0; i < max; i++)
+            {
+                paired.Add(new Dice
+                {
+                    ResultatAtak = i < attackerDice.Count ? attackerDice[i] : 0,
+                    ResultatDefense = i < defenderDice.Count ? defenderDice[i] : 0
+                });
+            }
+
+            var diceAttack = new DiceAtack
+            {
+                Atacant = currentPartida.TornPlayer,
+                Defensor = paisDefensor.PaisDeJugador,
+                tirades = paired
+            };
+
+            Debug.WriteLine(diceAttack);
+
+            var window = new BatallaDausWindow(diceAttack);
+            window.ShowDialog();
+
+
+            RestoreAllBorders();
+        }
+
+
+
+
+
+        private async void OnGameStateChanged(GameState estat)
+        {
+            currentPartida.EstatPartida = estat;
+
+            switch (estat)
+            {
+                case GameState.Attaking:
+
+                    paisAtacant = null;
+                    paisDefensor = null;
+
+                    txbInformatiu.Text = "Ataca un pais veí!";
+
+                    txbMessageOverlay.Text = "Comença la Guerra!";
+                    MessageOverlay.Visibility = Visibility.Visible;
+
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+
+                    MessageOverlay.Visibility = Visibility.Collapsed;
+                    break;
+            }
+        }
+
+        private void FillCountryPathMap()
+        {
+            var allCountries = continents.SelectMany(c => c.paisos).ToList();
+            var countryById = allCountries.ToDictionary(p => p.Id);
+
+            _countryPathMap = MapCanvas.Children
+                .OfType<Path>()
+                .Where(p => p.Tag != null && long.TryParse(p.Tag.ToString(), out _))
+                .GroupBy(p => long.Parse(p.Tag.ToString()))
+                .ToDictionary(
+                    grp => grp.Key,
+                    grp => grp.First()
+                );
+        }
+
+
+        private async void OnMapUpdated(List<(long countryId, int troops, long? playerId)> list)
+        {
+
+            if (_countryPathMap == null || _countryPathMap.Count == 0)
+            {
+                await carregarDades();
+            }
+
             Dispatcher.Invoke(() =>
             {
                 foreach (var (countryId, troops, playerId) in list)
@@ -412,6 +655,11 @@ namespace Risk
             _gameService.StopListening();
             this.NavigationService?.Navigate(new MenuPage());
 
+
+        }
+
+        private void btn_next_turn_click(object sender, RoutedEventArgs e)
+        {
 
         }
     }

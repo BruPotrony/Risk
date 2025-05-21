@@ -160,9 +160,15 @@ namespace RiskServerConnection
 
         public event Action<List<long>> PlayerListReceived;
         public event Action<long> IdTornRecived;
+        public event Action<long> attackInitializedRecived;
         public event Action<long> IdPlayerLeftRecived;
         public event Action<GameState> gameStateRecived;
         public event Action<List<(long countryId, int troops, long? playerId)>> MapUpdatedRecived;
+        public event Action<List<int>, List<int>> DiceAttackRecived;
+        public event Action territoryConqueredRecived;
+
+
+
 
 
         private bool _listening;
@@ -213,6 +219,60 @@ namespace RiskServerConnection
                         IdPlayerLeftRecived?.Invoke(idPlayerLeft);
                         break;
 
+                    case "attack_initiated":
+                        long defenderCountryId;
+                        defenderCountryId = root.GetProperty("targetCountryId").GetInt64();
+                        attackInitializedRecived?.Invoke(defenderCountryId);
+                        break;
+
+                    case "territory_under_attack":
+                        long defendeCountryId;
+                        defendeCountryId = root.GetProperty("targetCountryId").GetInt64();
+                        attackInitializedRecived?.Invoke(defendeCountryId);
+                        break;
+
+                    case "territory_conquered":
+                        territoryConqueredRecived?.Invoke();
+                        break;
+
+                    case "dice_rolls":
+                        if (root.TryGetProperty("attackerDice", out var attackerElem)
+                         && attackerElem.ValueKind == JsonValueKind.Array
+                         && root.TryGetProperty("defenderDice", out var defenderElem)
+                         && defenderElem.ValueKind == JsonValueKind.Array)
+                        {
+                            var dausAtacants = attackerElem
+                                .EnumerateArray()
+                                .Select(d => d.GetInt32())
+                                .ToList();
+
+                            var dausDefensors = defenderElem
+                                .EnumerateArray()
+                                .Select(d => d.GetInt32())
+                                .ToList();
+
+                            DiceAttackRecived?.Invoke(dausAtacants, dausDefensors);
+                        }
+                        break;
+
+
+                    case "stage_change":
+                        string stage;
+                        stage = root.GetProperty("stage").GetString();
+                        switch (stage)
+                        {
+                            case "ATTACKING":
+                                gameStateRecived?.Invoke(GameState.Attaking);
+                                break;
+                            case "OCCUPATION":
+                                gameStateRecived?.Invoke(GameState.Occupation);
+                                break;
+                            case "REFORCE":
+                                gameStateRecived?.Invoke(GameState.Reforce);
+                                break;
+                            }
+                        break;
+
                     case "map_update":
                         if (root.TryGetProperty("countries", out var countriesElem)
                             && countriesElem.ValueKind == JsonValueKind.Array)
@@ -258,6 +318,54 @@ namespace RiskServerConnection
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);
+        }
+
+
+        public async Task SendAttackAsync(long countryId, long enemyCountryId, int troops)
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "attack",
+                    countryId,
+                    enemyCountryId,
+                    troops
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);          
+
+
+        }
+
+
+        public async Task SendMoveTroopsAsync(int troops)
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "move_troops",
+                    troops = troops
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
             string json = JsonSerializer.Serialize(payload, options);
             await _ws.SendAsync(json);
         }
