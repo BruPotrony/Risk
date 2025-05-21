@@ -391,6 +391,52 @@ namespace RiskServerConnection
             await _ws.SendAsync(json);
         }
 
+
+        public async Task SendFortifyAsync(long sourceCountryId, long targetCountryId, int troops)
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "fortify",
+                    sourceCountryId = sourceCountryId,
+                    targetCountryId = targetCountryId,
+                    troops = troops
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);
+        }
+
+
+
+        public async Task SendEndTurnAsync()
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "end_turn"
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);
+        }
+
         public void Dispose() => _ws.Dispose();
 
         

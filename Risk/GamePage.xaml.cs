@@ -206,16 +206,37 @@ namespace Risk
                 {
                     if (country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                     {
-                        fromCountry = country;
+                        if (fromCountry == null)
+                        {
+                            getPaisFrom(country);
+                        }
+                        else if (fromCountry != null && fromCountry != country)
+                        {
+                            bool esVei = fromCountry.Fronteres.Any(vei => vei.Id == country.Id && vei.PaisDeJugador?.Id == currentPartida.TornPlayer.Id);
+                            if (!esVei)
+                            {
+                                MessageBox.Show("Has de seleccionar un país veí també teu!");
+                                return;
+                            }
 
-                        int tropesReforçar = getTroops(country, "Tropes a reforçar");
-                        if (tropesReforçar == -1) return;
+                            int tropes = getTroops(fromCountry, "Tropes per reforçar");
+                            if (tropes <= 0 || tropes >= fromCountry.Tropes)
+                            {
+                                MessageBox.Show("Número de tropes no vàlid!");
+                                return;
+                            }
 
-                        
+                            toCountry = country;
+                            await _gameService.SendFortifyAsync(fromCountry.Id, toCountry.Id, tropes);
+
+                            fromCountry = null;
+                            toCountry = null;
+                            RestoreAllBorders();
+                        }
                     }
                     else
                     {
-                        MessageBox.Show("Has de reforçar un pais teu!");
+                        MessageBox.Show("Has de seleccionar només països teus!");
                     }
                 }
 
@@ -227,7 +248,7 @@ namespace Risk
         {
             if (fromCountry == null)
             {
-                getPaisAtacant(country);
+                getPaisFrom(country);
                 if (fromCountry == null) return;
 
                 HighlightAttackableNeighbors(fromCountry);
@@ -240,7 +261,7 @@ namespace Risk
                 if (country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                 {
                     fromCountry = null;
-                    getPaisAtacant(country);
+                    getPaisFrom(country);
                     if (fromCountry == null) return;
 
                     HighlightAttackableNeighbors(fromCountry);
@@ -336,19 +357,19 @@ namespace Risk
 
 
 
-        private void getPaisAtacant(Pais country)
+        private void getPaisFrom(Pais country)
         {
             if (fromCountry != null)
                 return;
 
             if (country.PaisDeJugador != null && currentPartida.TornPlayer.Id != country.PaisDeJugador.Id)
             {
-                MessageBox.Show("Has d'atacar des d'un pais teu!");
+                MessageBox.Show("Has de seleccionar un pais teu!");
                 return;
             }
             if (country.Tropes == 1)
             {
-                MessageBox.Show("Has d'atacar des d'un pais amb mes d'una tropa!");
+                MessageBox.Show("Has de seleccionar un pais amb mes d'una tropa!");
                 return;
             }
             if (fromCountry == null)
@@ -575,20 +596,24 @@ namespace Risk
 
 
 
-
-
         private async void OnGameStateChanged(GameState estat)
         {
             currentPartida.EstatPartida = estat;
 
-            if (currentPartida.TornPlayer.SkfUser.Id == IniPage.currentUser.Id)
+            if (currentPartida.TornPlayer.SkfUser.Id != IniPage.currentUser.Id  && GameState.Attaking == currentPartida.EstatPartida)
             {
-                btnSegTorn.Visibility = Visibility.Hidden;
+                btnSegTorn.Visibility = Visibility.Visible;
+
             }
-            else
+            else if (currentPartida.TornPlayer.SkfUser.Id == IniPage.currentUser.Id && GameState.Reforce == currentPartida.EstatPartida)
             {
                 btnSegTorn.Visibility = Visibility.Visible;
             }
+            else
+            {
+                btnSegTorn.Visibility = Visibility.Collapsed;
+            }
+
 
             switch (estat)
             {
@@ -610,6 +635,7 @@ namespace Risk
                     break;
 
                 case GameState.Reforce:
+
                     fromCountry = null;
                     toCountry = null;
 
@@ -683,7 +709,6 @@ namespace Risk
                     }
                 }
             });
-            
         }
 
         private Brush GetBrushForPlayer(long playerId)
@@ -713,7 +738,14 @@ namespace Risk
 
         private async void btn_next_turn_click(object sender, RoutedEventArgs e)
         {
-            await _gameService.SendEndAttackingAsync();
+            if (currentPartida.EstatPartida == GameState.Attaking)
+            {
+                await _gameService.SendEndAttackingAsync();
+            }
+            else if (currentPartida.EstatPartida == GameState.Reforce)
+            {
+                await _gameService.SendEndTurnAsync();
+            }
         }
     }
 }
