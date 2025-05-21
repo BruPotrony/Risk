@@ -206,6 +206,8 @@ namespace Risk
                 {
                     if (country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                     {
+                        fromCountry = country;
+
                         int tropesReforçar = getTroops(country, "Tropes a reforçar");
                         if (tropesReforçar == -1) return;
 
@@ -579,12 +581,23 @@ namespace Risk
         {
             currentPartida.EstatPartida = estat;
 
+            if (currentPartida.TornPlayer.SkfUser.Id == IniPage.currentUser.Id)
+            {
+                btnSegTorn.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                btnSegTorn.Visibility = Visibility.Visible;
+            }
+
             switch (estat)
             {
                 case GameState.Attaking:
 
                     fromCountry = null;
                     toCountry = null;
+
+                    btnSegTorn.Content = "Seguent Torn";
 
                     txbInformatiu.Text = "Ataca un pais veí!";
 
@@ -597,6 +610,11 @@ namespace Risk
                     break;
 
                 case GameState.Reforce:
+                    fromCountry = null;
+                    toCountry = null;
+
+                    btnSegTorn.Content = "Finalitzar Torn";
+
                     txbInformatiu.Text = "Reforça els països!";
 
                     txbMessageOverlay.Text = "Fase de reforç";
