@@ -566,6 +566,7 @@ namespace Risk
             _gameService.territoryConqueredRecived += OnTerritoryConqueredRecived;
             _gameService.territoryUnderAttackRecived += OnTerritoryConqueredRecived;
             _gameService.totalTroopsToPlaceRecived += OnTotalTroopsToPlaceRecived;
+            _gameService.winRecived += OnWinRecived;
 
 
             _gameService.StartListening();
@@ -582,6 +583,17 @@ namespace Risk
 
             currentPartida.Okupa = new List<Okupa>();
 
+        }
+
+        private async void OnWinRecived()
+        {
+            
+            txbMessageOverlay.Text = "You Win!!!";
+            MessageOverlay.Visibility = Visibility.Visible;
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            MessageOverlay.Visibility = Visibility.Collapsed;
         }
 
         private void OnTotalTroopsToPlaceRecived(long troops)

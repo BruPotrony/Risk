@@ -168,6 +168,7 @@ namespace RiskServerConnection
         public event Action territoryConqueredRecived;
         public event Action<long, long> territoryUnderAttackRecived;
         public event Action<long> totalTroopsToPlaceRecived;
+        public event Action winRecived;
 
 
 
@@ -245,6 +246,12 @@ namespace RiskServerConnection
                         totalTroopsToPlaceRecived?.Invoke(totalTroops);
                         break;
 
+                    case "bonus_to_place":
+                        long totalTroopsToPlace;
+                        totalTroopsToPlace = root.GetProperty("totalTroopsToPlace").GetInt64();
+                        totalTroopsToPlaceRecived?.Invoke(totalTroopsToPlace);
+                        break;
+
                     case "troops_placed":
                         long total;
                         total = root.GetProperty("remainingTroops").GetInt64();
@@ -255,6 +262,10 @@ namespace RiskServerConnection
                         string errorMessage;
                         errorMessage = root.GetProperty("message").GetString();
                         throw new InvalidOperationException($"Error: {errorMessage}");
+                        break;
+
+                    case "win":
+                        winRecived?.Invoke();
                         break;
 
 
@@ -463,6 +474,11 @@ namespace RiskServerConnection
 
             string json = JsonSerializer.Serialize(payload, options);
             await _ws.SendAsync(json);
+
+            string resp = await _ws.ReceiveAsync();
+            string resp1 = await _ws.ReceiveAsync();
+            Debug.WriteLine(resp1);
+
         }
 
 
