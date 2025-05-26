@@ -13,7 +13,8 @@ namespace RiskModel
 
         Attaking,
         Occupation,
-        Reforce
+        Reforce,
+        Bonus
     }
 
 }

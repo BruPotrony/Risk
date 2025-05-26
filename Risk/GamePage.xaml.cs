@@ -32,6 +32,8 @@ namespace Risk
 
         public readonly GameService _gameService;
 
+        private int troopsToPlace;
+
         private readonly Brush[] _availableBrushes = new[]
         {
             Brushes.IndianRed,
@@ -109,6 +111,7 @@ namespace Risk
                                     Url = "https://example.com/avatar"
                                 },
                             },
+                            SkfPartida = currentPartida,
                             ColorBrush = GetBrushForPlayer(id)
                         };
                         currentPartida.Jugadors.Add(newPlayer);
@@ -204,45 +207,72 @@ namespace Risk
                 }
                 else if (currentPartida.EstatPartida == GameState.Reforce)
                 {
+                    await llogicaReforc(path, country);
+                }
+                else if (currentPartida.EstatPartida == GameState.Bonus)
+                {
                     if (country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
                     {
-                        if (fromCountry == null)
+                        if (troopsToPlace > 0)
                         {
-                            getPaisFrom(country);
-                        }
-                        else if (fromCountry != null && fromCountry != country)
-                        {
-                            bool esVei = fromCountry.Fronteres.Any(vei => vei.Id == country.Id && vei.PaisDeJugador?.Id == currentPartida.TornPlayer.Id);
-                            if (!esVei)
+                            int troops = getBonusTroops(troopsToPlace, "Tropes a posar");
+
+                            if (troops <= 0 || troops > troopsToPlace)
                             {
-                                MessageBox.Show("Has de seleccionar un país veí també teu!");
                                 return;
                             }
-
-                            int tropes = getTroops(fromCountry, "Tropes per reforçar");
-                            if (tropes <= 0 || tropes >= fromCountry.Tropes)
-                            {
-                                MessageBox.Show("Número de tropes no vàlid!");
-                                return;
-                            }
-
-                            toCountry = country;
-                            await _gameService.SendFortifyAsync(fromCountry.Id, toCountry.Id, tropes);
-
-                            fromCountry = null;
-                            toCountry = null;
-                            RestoreAllBorders();
+                            await _gameService.SendBonusAsync(country.Id, troops);
                         }
-                    }
-                    else
-                    {
-                        MessageBox.Show("Has de seleccionar només països teus!");
                     }
                 }
 
 
             }
         }
+
+        private async Task llogicaReforc(Path path, Pais country)
+        {
+            if (country.PaisDeJugador != null && country.PaisDeJugador.Id == currentPartida.TornPlayer.Id)
+            {
+                if (fromCountry == null)
+                {
+                    getPaisFrom(country);
+                    pintarBorder(path, Brushes.White);
+                }
+                else if (fromCountry != null && fromCountry != country)
+                {
+                    int tropes = getTroops(fromCountry, "Tropes per reforçar");
+                    if (tropes <= 0 || tropes >= fromCountry.Tropes)
+                    {
+                        return;
+                    }
+
+                    toCountry = country;
+                    await _gameService.SendFortifyAsync(fromCountry.Id, toCountry.Id, tropes);
+
+                    fromCountry = null;
+                    toCountry = null;
+                    RestoreAllBorders();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Has de seleccionar només països teus!");
+            }
+        }
+
+        private void pintarBorder(Path path, Brush borderColor)
+        {
+            if (!_originalStrokes.ContainsKey(path))
+            {
+                _originalStrokes[path] = path.Stroke;
+                _originalStrokeThickness[path] = path.StrokeThickness;
+            }
+
+            path.Stroke = borderColor;
+            path.StrokeThickness = 4;
+        }
+
 
         private async Task llogicaAtac(Pais country)
         {
@@ -272,6 +302,12 @@ namespace Risk
                     if (esPaisVei)
                     {
                         int tropesAtacants = getTroops(fromCountry, "Tropes Atacants");
+
+                        if (tropesAtacants <= 0 || tropesAtacants >= fromCountry.Tropes)
+                        {
+                            return;
+                        }
+
                         toCountry = country;
                         await _gameService.SendAttackAsync(fromCountry.Id, toCountry.Id, tropesAtacants);
                     }
@@ -319,6 +355,21 @@ namespace Risk
             }
         }
 
+        private int getBonusTroops(int maxTroops, string tittle)
+        {
+            ContadorTropesBonus contador = new ContadorTropesBonus(maxTroops, tittle);
+            if (contador.ShowDialog() == true)
+            {
+                int tropes = contador.troopsCount;
+
+                return tropes;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
         private void pintarPais(Path path)
         {
             var brush = GetBrushForPlayer(currentPartida.TornPlayer.Id);
@@ -341,14 +392,7 @@ namespace Risk
                 if (vei.PaisDeJugador?.Id != myId
                     && _countryPathMap.TryGetValue(vei.Id, out var veiPath))
                 {
-                    if (!_originalStrokes.ContainsKey(veiPath))
-                    {
-                        _originalStrokes[veiPath] = veiPath.Stroke;
-                        _originalStrokeThickness[veiPath] = veiPath.StrokeThickness;
-                    }
-
-                    veiPath.Stroke = Brushes.White;
-                    veiPath.StrokeThickness = 4;
+                    pintarBorder(veiPath, Brushes.White);
                 }
             }
         }
@@ -520,6 +564,8 @@ namespace Risk
             _gameService.DiceAttackRecived += OnDiceAttackChanged;
             _gameService.attackInitializedRecived += OnAttackInitialized;
             _gameService.territoryConqueredRecived += OnTerritoryConqueredRecived;
+            _gameService.territoryUnderAttackRecived += OnTerritoryConqueredRecived;
+            _gameService.totalTroopsToPlaceRecived += OnTotalTroopsToPlaceRecived;
 
 
             _gameService.StartListening();
@@ -534,6 +580,22 @@ namespace Risk
                 OnPlayersChanged(new List<long> { IniPage.currentUser.Id });
             }
 
+            currentPartida.Okupa = new List<Okupa>();
+
+        }
+
+        private void OnTotalTroopsToPlaceRecived(long troops)
+        {
+            troopsToPlace = (int)troops;
+
+            txbInformatiu.Text = "Tens " + troopsToPlace + " tropes a col·locar";
+
+        }
+
+        private void OnTerritoryConqueredRecived(long fromCountry, long toCountry)
+        {
+            pintarBorder(_countryPathMap[toCountry], Brushes.Red);
+            pintarBorder(_countryPathMap[fromCountry], Brushes.White);
         }
 
         private async void OnTerritoryConqueredRecived()
@@ -599,8 +661,11 @@ namespace Risk
         private async void OnGameStateChanged(GameState estat)
         {
             currentPartida.EstatPartida = estat;
+            RestoreAllBorders();
+            fromCountry = null;
+            toCountry = null;
 
-            if (currentPartida.TornPlayer.SkfUser.Id != IniPage.currentUser.Id && GameState.Attaking == currentPartida.EstatPartida)
+            if (currentPartida.TornPlayer.SkfUser.Id == IniPage.currentUser.Id && GameState.Attaking == currentPartida.EstatPartida)
             {
                 btnSegTorn.Visibility = Visibility.Visible;
 
@@ -611,16 +676,13 @@ namespace Risk
             }
             else
             {
-                btnSegTorn.Visibility = Visibility.Collapsed;
+                btnSegTorn.Visibility = Visibility.Hidden;
             }
 
 
             switch (estat)
             {
                 case GameState.Attaking:
-
-                    fromCountry = null;
-                    toCountry = null;
 
                     btnSegTorn.Content = "Seguent Torn";
 
@@ -636,14 +698,23 @@ namespace Risk
 
                 case GameState.Reforce:
 
-                    fromCountry = null;
-                    toCountry = null;
-
                     btnSegTorn.Content = "Finalitzar Torn";
 
                     txbInformatiu.Text = "Reforça els països!";
 
                     txbMessageOverlay.Text = "Fase de reforç";
+                    MessageOverlay.Visibility = Visibility.Visible;
+
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+
+                    MessageOverlay.Visibility = Visibility.Collapsed;
+                    break;
+
+                case GameState.Bonus:
+
+                    txbInformatiu.Text = troopsToPlace+" tropes a col·locar";
+
+                    txbMessageOverlay.Text = "Fase de Bonus";
                     MessageOverlay.Visibility = Visibility.Visible;
 
                     await Task.Delay(TimeSpan.FromSeconds(3));
@@ -692,6 +763,12 @@ namespace Risk
                                 ? currentPartida.Jugadors.FirstOrDefault(j => j.Id == playerId.Value)
                                 : null;
 
+                            Jugador? jugador = null;
+                            if (country.PaisDeJugador != null)
+                            {
+                                jugador = currentPartida.Jugadors
+                                    .FirstOrDefault(j => j.Id == country.PaisDeJugador.Id);
+                            }
 
                             if (playerId != null)
                             {
@@ -705,6 +782,52 @@ namespace Risk
                                     lbl.Text = troops.ToString();
                                 }
                             }
+                            else
+                            {
+                                path.Fill = Brushes.Gray;
+                                if (_countryLabelMap.TryGetValue(countryId, out var lbl))
+                                {
+                                    lbl.Text = 0 + "";
+                                }
+                            }
+
+
+
+                            if (jugador != null && country != null)
+                            {
+                                var existingOkupa = currentPartida.Okupa
+                                    .FirstOrDefault(o => o.Pais.Id == country.Id);
+
+                                if (existingOkupa != null)
+                                {
+                                    if (existingOkupa.Jugador.Id == jugador.Id)
+                                    {
+                                        existingOkupa.Tropes = troops;
+                                    }
+                                    else
+                                    {
+                                        currentPartida.Okupa.Remove(existingOkupa);
+                                        currentPartida.Okupa.Add(new Okupa
+                                        {
+                                            Jugador = jugador,
+                                            Pais = country,
+                                            Tropes = troops
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    currentPartida.Okupa.Add(new Okupa
+                                    {
+                                        Jugador = jugador,
+                                        Pais = country,
+                                        Tropes = troops
+                                    });
+                                }
+
+                                jugador.NotifyTroopsChanged();
+                            }
+
                         }
                     }
                 }
@@ -730,7 +853,6 @@ namespace Risk
 
             refrescarListViewJugadors();
 
-            _gameService.StopListening();
             this.NavigationService?.Navigate(new MenuPage());
 
 

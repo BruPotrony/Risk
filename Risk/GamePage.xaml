@@ -631,6 +631,8 @@
 
         <Button Click="btn_next_turn_click" x:Name="btnSegTorn" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Content="Seguent Torn" Margin="0,0,0,20" Style="{StaticResource RoundedButtonStyle}" Visibility="Hidden" HorizontalAlignment="Center" Width="250" Height="60"/>
 
+        
+        
         <Grid x:Name="LoadingOverlay"
           Background="#99000000"
           Visibility="Visible" 

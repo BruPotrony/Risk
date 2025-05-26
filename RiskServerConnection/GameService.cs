@@ -166,7 +166,8 @@ namespace RiskServerConnection
         public event Action<List<(long countryId, int troops, long? playerId)>> MapUpdatedRecived;
         public event Action<List<int>, List<int>> DiceAttackRecived;
         public event Action territoryConqueredRecived;
-
+        public event Action<long, long> territoryUnderAttackRecived;
+        public event Action<long> totalTroopsToPlaceRecived;
 
 
 
@@ -227,13 +228,35 @@ namespace RiskServerConnection
 
                     case "territory_under_attack":
                         long defendeCountryId;
+                        long attackCountryId;
+                        attackCountryId = root.GetProperty("sourceCountryId").GetInt64();
                         defendeCountryId = root.GetProperty("targetCountryId").GetInt64();
                         attackInitializedRecived?.Invoke(defendeCountryId);
+                        territoryUnderAttackRecived?.Invoke(attackCountryId, defendeCountryId);
                         break;
 
                     case "territory_conquered":
                         territoryConqueredRecived?.Invoke();
                         break;
+
+                    case "bonus":
+                        long totalTroops;
+                        totalTroops = root.GetProperty("bonusTroops").GetInt64();
+                        totalTroopsToPlaceRecived?.Invoke(totalTroops);
+                        break;
+
+                    case "troops_placed":
+                        long total;
+                        total = root.GetProperty("remainingTroops").GetInt64();
+                        totalTroopsToPlaceRecived?.Invoke(total);
+                        break;
+
+                    case "error":
+                        string errorMessage;
+                        errorMessage = root.GetProperty("message").GetString();
+                        throw new InvalidOperationException($"Error: {errorMessage}");
+                        break;
+
 
                     case "dice_rolls":
                         if (root.TryGetProperty("attackerDice", out var attackerElem)
@@ -269,6 +292,9 @@ namespace RiskServerConnection
                                 break;
                             case "REFORCE":
                                 gameStateRecived?.Invoke(GameState.Reforce);
+                                break;
+                            case "BONUS":
+                                gameStateRecived?.Invoke(GameState.Bonus);
                                 break;
                         }
                         break;
@@ -321,6 +347,31 @@ namespace RiskServerConnection
             string json = JsonSerializer.Serialize(payload, options);
             await _ws.SendAsync(json);
 
+            
+        }
+
+
+        public async Task SendBonusAsync(long countryId, int troops)
+        {
+            var payload = new
+            {
+                action = "send_input",
+                data = new
+                {
+                    type = "place_troops",
+                    countryId = countryId,
+                    troops = troops
+                }
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+            string json = JsonSerializer.Serialize(payload, options);
+            await _ws.SendAsync(json);
+
+
         }
 
 
@@ -345,8 +396,6 @@ namespace RiskServerConnection
 
             string json = JsonSerializer.Serialize(payload, options);
             await _ws.SendAsync(json);
-
-
         }
 
 

@@ -80,4 +80,16 @@
     </Resource>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="ContadorTropesAtac.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="ContadorTropesAtac.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
 </Project>

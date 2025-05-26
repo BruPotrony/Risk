@@ -20,6 +20,27 @@ namespace RiskModel
         public Partida SkfPartida { get; set; }
         public System.Windows.Media.Brush ColorBrush { get; set; }
 
+        public int TotalTroops
+        {
+            get
+            {
+                if (SkfPartida?.Okupa == null)
+                    return 0;
+
+                return SkfPartida.Okupa
+                    .Where(o => o.Jugador.Id == this.Id)
+                    .Sum(o => o.Tropes);
+            }
+        }
+
+
+        public void NotifyTroopsChanged()
+        {
+            OnPropertyChanged(nameof(TotalTroops));
+        }
+
+
+
 
 
 
