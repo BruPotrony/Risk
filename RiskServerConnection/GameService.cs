@@ -191,6 +191,8 @@ namespace RiskServerConnection
             _cts.Cancel();
         }
 
+        bool someoneHasWon = false;
+
         private async Task ReceiveLoopAsync()
         {
             while (_ws.State == WebSocketState.Open)
@@ -265,6 +267,8 @@ namespace RiskServerConnection
                         break;
 
                     case "win":
+                        if (someoneHasWon) break;
+                        someoneHasWon = true;
                         winRecived?.Invoke();
                         break;
 
