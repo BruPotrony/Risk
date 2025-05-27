@@ -85,5 +85,14 @@ namespace Risk
             }
         }
 
+        private void btn_entrar_privada_click(object sender, RoutedEventArgs e)
+        {
+            PartidaPrivadaTokenWindow ppt = new PartidaPrivadaTokenWindow();
+            if (ppt.ShowDialog() == true)
+            {
+                this.DialogResult = true;
+                this.Close();
+            }
+        }
     }
 }

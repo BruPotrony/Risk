@@ -200,7 +200,7 @@
                 </ListBox>
             </ScrollViewer>
 
-            <Button  Grid.Row="2" Grid.ColumnSpan="2" Margin="0,30,0,0" Content="Entrar Amb Codi" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Center" Width="250" Height="45"/>
+            <Button Click="btn_entrar_privada_click" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,30,0,0" Content="Entrar Amb Codi" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Center" Width="250" Height="45"/>
             <Button Click="btn_entrar_click"  Grid.Row="3" Grid.Column="1" Content="Entrar" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Center" Width="140" Height="45"/>
             <Button Click="btn_cancel_click" Grid.Row="3" Grid.Column="0" Margin="30" Content="Cancelar" Style="{StaticResource RoundedButtonStyle}" HorizontalAlignment="Center" Width="140" Height="45"/>
 

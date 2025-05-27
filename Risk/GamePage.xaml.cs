@@ -90,33 +90,35 @@ namespace Risk
 
         }
 
-        private void OnPlayersChanged(List<long> list)
+
+
+        private void OnPlayersChanged(List<PlayerAux> list)
         {
             Dispatcher.Invoke(() =>
             {
-                foreach (var id in list)
+                foreach (var p in list)
                 {
-                    if (currentPartida.Jugadors.All(j => j.Id != id))
+                    if (currentPartida.Jugadors.All(j => j.Id != p.Id))
                     {
                         var newPlayer = new Jugador
                         {
-                            Id = id,
+                            Id = p.Id,
                             SkfUser = new Usuari
                             {
-                                Id = id,
-                                Username = "Player" + id.ToString(),
+                                Id = p.Id,
+                                Username = p.Username,
                                 Avatar = new Avatar
                                 {
-                                    Id = 1,
-                                    Url = "https://example.com/avatar"
-                                },
+                                    Url = p.AvatarUrl
+                                }
                             },
                             SkfPartida = currentPartida,
-                            ColorBrush = GetBrushForPlayer(id)
+                            ColorBrush = GetBrushForPlayer(p.Id)
                         };
                         currentPartida.Jugadors.Add(newPlayer);
                     }
                 }
+
                 refrescarListViewJugadors();
 
                 currentPartida.currentPlayers = list.Count;
@@ -554,6 +556,9 @@ namespace Risk
 
             currentPartida.Jugadors = new List<Jugador>();
 
+            currentPartida.Okupa = new List<Okupa>();
+
+
 
 
             _gameService.PlayerListReceived += OnPlayersChanged;
@@ -567,21 +572,64 @@ namespace Risk
             _gameService.territoryUnderAttackRecived += OnTerritoryConqueredRecived;
             _gameService.totalTroopsToPlaceRecived += OnTotalTroopsToPlaceRecived;
             _gameService.winRecived += OnWinRecived;
-
+            _gameService.joinedGameRecived += OnJoinedGameRecived;
+            _gameService.gameStartedRecived += OnGameStart;
 
             _gameService.StartListening();
 
 
             if (!currentPartida.isCreator)
             {
-                string response = await _gameService.JoinGameAsync(currentPartida.Token);
+
+                await _gameService.JoinGameAsync(currentPartida.Token);
+
+                
+                
+
+                Debug.WriteLine("Partida unida: " + currentPartida.Nom);
+
             }
             else
             {
-                OnPlayersChanged(new List<long> { IniPage.currentUser.Id });
+                OnPlayersChanged(new List<PlayerAux> {
+                                    new (
+                                        IniPage.currentUser.Avatar.Url,
+                                        IniPage.currentUser.Id,
+                                        IniPage.currentUser.Username
+                                    )
+                                });
+
             }
 
-            currentPartida.Okupa = new List<Okupa>();
+
+            if (!currentPartida.isPublic)
+            {
+                txbInformatiu.Text = "CODI: "+ currentPartida.Token;
+                Debug.WriteLine("Codi de la partida: " + currentPartida.Token);
+            }
+
+
+        }
+
+        private void OnGameStart()
+        {
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+
+            if (_countryPathMap != null || _countryPathMap.Count == 0)
+            {
+                carregarDades();
+            }
+        }
+
+        private void OnJoinedGameRecived(Partida partida)
+        {
+            if (!currentPartida.isPublic)
+            {
+                currentPartida.Nom = partida.Nom;
+                currentPartida.maxPlayers = partida.maxPlayers;
+                currentPartida.Token = partida.Token;
+            }
+            
 
         }
 
@@ -594,6 +642,14 @@ namespace Risk
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             MessageOverlay.Visibility = Visibility.Collapsed;
+
+            _gameService.LeaveGameAsync();
+
+            this.NavigationService?.Navigate(new MenuPage());
+
+            
+
+
         }
 
         private void OnTotalTroopsToPlaceRecived(long troops)
@@ -724,7 +780,7 @@ namespace Risk
 
                 case GameState.Bonus:
 
-                    txbInformatiu.Text = troopsToPlace+" tropes a col·locar";
+                    txbInformatiu.Text ="Tens "+ troopsToPlace+" tropes a col·locar";
 
                     txbMessageOverlay.Text = "Fase de Bonus";
                     MessageOverlay.Visibility = Visibility.Visible;

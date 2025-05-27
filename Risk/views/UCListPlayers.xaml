@@ -58,7 +58,7 @@
                     Margin="10,0">
                     <Border.Background>
                         <ImageBrush
-                            ImageSource="{Binding ElementName=ucJugadors, Path=MyJugador.SkfUser.Avatar, FallbackValue=https://raw.githubusercontent.com/jonah3d/riskimg/refs/heads/main/imge1.png}"
+                            ImageSource="{Binding ElementName=ucJugadors, Path=MyJugador.SkfUser.Avatar.Url, FallbackValue=https://raw.githubusercontent.com/jonah3d/riskimg/refs/heads/main/imge1.png}"
                             Stretch="UniformToFill"/>
                     </Border.Background>
                 </Border>

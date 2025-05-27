@@ -23,6 +23,7 @@ namespace Risk
     {
 
         public static Partida currentPartida;
+       
 
         public MenuPage()
         {

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -138,7 +139,7 @@ namespace RiskServerConnection
         }
 
 
-        public async Task<string> JoinGameAsync(string token)
+        public async Task JoinGameAsync(string token)
         {
             if (!_registered)
                 throw new InvalidOperationException("\"S'ha de registrar abans de crear la partida");
@@ -151,14 +152,11 @@ namespace RiskServerConnection
 
             string reqJson = JsonSerializer.Serialize(payload);
             await _ws.SendAsync(reqJson);
-
-            string respJson = await _ws.ReceiveAsync();
-
-            return respJson;
+            
         }
 
 
-        public event Action<List<long>> PlayerListReceived;
+        public event Action<List<PlayerAux>> PlayerListReceived;
         public event Action<long> IdTornRecived;
         public event Action<long> attackInitializedRecived;
         public event Action<long> IdPlayerLeftRecived;
@@ -169,6 +167,9 @@ namespace RiskServerConnection
         public event Action<long, long> territoryUnderAttackRecived;
         public event Action<long> totalTroopsToPlaceRecived;
         public event Action winRecived;
+        public event Action<Partida> joinedGameRecived;
+        public event Action gameStartedRecived;
+
 
 
 
@@ -193,6 +194,8 @@ namespace RiskServerConnection
 
         bool someoneHasWon = false;
 
+
+
         private async Task ReceiveLoopAsync()
         {
             while (_ws.State == WebSocketState.Open)
@@ -205,10 +208,17 @@ namespace RiskServerConnection
                 switch (act.GetString())
                 {
                     case "player_list":
-                        var ids = new List<long>();
-                        foreach (var el in root.GetProperty("players").EnumerateArray())
-                            ids.Add(el.GetInt64());
-                        PlayerListReceived?.Invoke(ids);
+                        var players = root.GetProperty("players").EnumerateArray()
+                            .Select(el => new PlayerAux(
+                                el.GetProperty("avatar_url").GetString()!,
+                                el.GetProperty("id").GetInt64(),
+                                el.GetProperty("username").GetString()!
+                            ))
+                            .ToList();
+
+                        Debug.WriteLine($"Players: {string.Join(", ", players.Select(p => p.Username))}");
+
+                        PlayerListReceived?.Invoke(players);
                         break;
 
                     case "player_turn":
@@ -248,6 +258,11 @@ namespace RiskServerConnection
                         totalTroopsToPlaceRecived?.Invoke(totalTroops);
                         break;
 
+
+                    case "game_started":
+                        gameStartedRecived?.Invoke();
+                        break;
+
                     case "bonus_to_place":
                         long totalTroopsToPlace;
                         totalTroopsToPlace = root.GetProperty("totalTroopsToPlace").GetInt64();
@@ -271,6 +286,17 @@ namespace RiskServerConnection
                         someoneHasWon = true;
                         winRecived?.Invoke();
                         break;
+
+                    case "joined_game":
+                        Partida aux = new Partida();
+                        aux.Token = root.GetProperty("token").GetString();
+                        aux.Nom = root.GetProperty("gameName").GetString();
+                        aux.maxPlayers = root.GetProperty("maxPlayers").GetInt32();
+
+
+                        joinedGameRecived?.Invoke(aux);
+                        break;
+
 
 
                     case "dice_rolls":
