@@ -614,6 +614,11 @@ namespace Risk
 
         private async void OnGameOverRecived()
         {
+            if (youWon)
+            {
+                return; 
+            }
+
             txbMessageOverlay.Text = "You Lost :(";
             MessageOverlay.Visibility = Visibility.Visible;
 
@@ -648,9 +653,18 @@ namespace Risk
 
         }
 
+        private bool youWon = false;
+
         private async void OnWinRecived()
         {
-            
+
+            if (youWon)
+            {
+                return; 
+            }
+
+            youWon = true;
+
             txbMessageOverlay.Text = "You Win!!!";
             MessageOverlay.Visibility = Visibility.Visible;
 
