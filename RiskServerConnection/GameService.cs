@@ -169,6 +169,7 @@ namespace RiskServerConnection
         public event Action winRecived;
         public event Action<Partida> joinedGameRecived;
         public event Action gameStartedRecived;
+        public event Action gameOverRecived;
 
 
 
@@ -250,6 +251,10 @@ namespace RiskServerConnection
 
                     case "territory_conquered":
                         territoryConqueredRecived?.Invoke();
+                        break;
+
+                    case "game_over":
+                        gameOverRecived?.Invoke();
                         break;
 
                     case "bonus":

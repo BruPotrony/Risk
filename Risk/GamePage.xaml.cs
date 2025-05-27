@@ -574,6 +574,7 @@ namespace Risk
             _gameService.winRecived += OnWinRecived;
             _gameService.joinedGameRecived += OnJoinedGameRecived;
             _gameService.gameStartedRecived += OnGameStart;
+            _gameService.gameOverRecived += OnGameOverRecived;
 
             _gameService.StartListening();
 
@@ -609,6 +610,20 @@ namespace Risk
             }
 
 
+        }
+
+        private async void OnGameOverRecived()
+        {
+            txbMessageOverlay.Text = "You Lost :(";
+            MessageOverlay.Visibility = Visibility.Visible;
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            MessageOverlay.Visibility = Visibility.Collapsed;
+
+            _gameService.LeaveGameAsync();
+
+            this.NavigationService?.Navigate(new MenuPage());
         }
 
         private void OnGameStart()
