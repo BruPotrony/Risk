@@ -575,6 +575,7 @@ namespace Risk
             _gameService.joinedGameRecived += OnJoinedGameRecived;
             _gameService.gameStartedRecived += OnGameStart;
             _gameService.gameOverRecived += OnGameOverRecived;
+            _gameService.endGameSomeoneLeftRecived += GameEndSomeoneLeft;
 
             _gameService.StartListening();
 
@@ -610,6 +611,25 @@ namespace Risk
             }
 
 
+        }
+
+        private async void GameEndSomeoneLeft()
+        {
+            if (youWon)
+            {
+                return;
+            }
+
+            txbMessageOverlay.Text = "End Game";
+            MessageOverlay.Visibility = Visibility.Visible;
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            MessageOverlay.Visibility = Visibility.Collapsed;
+
+            _gameService.LeaveGameAsync();
+
+            this.NavigationService?.Navigate(new MenuPage());
         }
 
         private async void OnGameOverRecived()

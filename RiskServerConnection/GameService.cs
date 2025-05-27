@@ -170,6 +170,7 @@ namespace RiskServerConnection
         public event Action<Partida> joinedGameRecived;
         public event Action gameStartedRecived;
         public event Action gameOverRecived;
+        public event Action endGameSomeoneLeftRecived;
 
 
 
@@ -255,6 +256,10 @@ namespace RiskServerConnection
 
                     case "game_over":
                         gameOverRecived?.Invoke();
+                        break;
+
+                    case "game_ended":
+                        endGameSomeoneLeftRecived?.Invoke();
                         break;
 
                     case "bonus":
