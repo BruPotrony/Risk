@@ -107,7 +107,6 @@ namespace Risk
 
                 partida = await gm.CreateGameAsync(partida);
 
-                MessageBox.Show("Petició de creació enviada");
                 MenuPage.currentPartida = this.partida;
                 this.DialogResult = true;
                 this.Close();

@@ -238,11 +238,11 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Margin="20">
                             <Image Source="Assets/crossed-swords-icon.png" Stretch="Fill" Margin="10" Width="80"/>
-                            <TextBlock x:Name="txtBattles" Text="3" FontSize="50" Width="40" TextAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock x:Name="txtBattles" Text="33" FontSize="50" TextAlignment="Center" VerticalAlignment="Center" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="20">
                             <Image Source="Assets/winning-cup-icon.png" Stretch="Fill" Margin="10" Width="80"/>
-                            <TextBlock x:Name="txtWins" Text="3" FontSize="50" Width="40" TextAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock x:Name="txtWins" Text="3" FontSize="50" TextAlignment="Center" VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

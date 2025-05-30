@@ -128,6 +128,8 @@ namespace Risk
                 {
                     LoadingOverlay.Visibility = Visibility.Collapsed;
 
+                    txbInformatiu.Text = "Fase de població";
+
                     if (_countryPathMap != null || _countryPathMap.Count == 0)
                     {
                         carregarDades();
@@ -225,6 +227,10 @@ namespace Risk
                             }
                             await _gameService.SendBonusAsync(country.Id, troops);
                         }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Has de seleccionar un pais teu per col·locar tropes!");
                     }
                 }
 
@@ -585,8 +591,7 @@ namespace Risk
 
                 await _gameService.JoinGameAsync(currentPartida.Token);
 
-                
-                
+                currentPartida.isPublic = true;
 
                 Debug.WriteLine("Partida unida: " + currentPartida.Nom);
 
@@ -629,7 +634,9 @@ namespace Risk
 
             _gameService.LeaveGameAsync();
 
-            this.NavigationService?.Navigate(new MenuPage());
+            _gameService.StopListening();
+
+            this.NavigationService?.Navigate(new IniPage());
         }
 
         private async void OnGameOverRecived()
@@ -648,7 +655,9 @@ namespace Risk
 
             _gameService.LeaveGameAsync();
 
-            this.NavigationService?.Navigate(new MenuPage());
+            _gameService.StopListening();
+
+            this.NavigationService?.Navigate(new IniPage());
         }
 
         private void OnGameStart()
@@ -694,9 +703,11 @@ namespace Risk
 
             _gameService.LeaveGameAsync();
 
-            this.NavigationService?.Navigate(new MenuPage());
+            _gameService.StopListening();
 
-            
+            this.NavigationService?.Navigate(new IniPage());
+
+
 
 
         }
@@ -705,7 +716,7 @@ namespace Risk
         {
             troopsToPlace = (int)troops;
 
-            txbInformatiu.Text = "Tens " + troopsToPlace + " tropes a col·locar";
+            txbInformatiu.Text = troopsToPlace + " tropes a col·locar";
 
         }
 
@@ -829,7 +840,7 @@ namespace Risk
 
                 case GameState.Bonus:
 
-                    txbInformatiu.Text ="Tens "+ troopsToPlace+" tropes a col·locar";
+                    txbInformatiu.Text =troopsToPlace+" tropes a col·locar";
 
                     txbMessageOverlay.Text = "Fase de Bonus";
                     MessageOverlay.Visibility = Visibility.Visible;
@@ -966,11 +977,14 @@ namespace Risk
             long idJugadorSortir = currentPartida.TornPlayer.Id;
 
             currentPartida.Jugadors.Remove(currentPartida.Jugadors.FirstOrDefault(j => j.Id == idJugadorSortir));
+            
             _gameService.LeaveGameAsync();
 
             refrescarListViewJugadors();
 
-            this.NavigationService?.Navigate(new MenuPage());
+            _gameService.StopListening();
+
+            this.NavigationService?.Navigate(new IniPage());
 
 
         }

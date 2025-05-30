@@ -134,8 +134,7 @@ namespace RiskServerConnection
             string json = JsonSerializer.Serialize(payload);
             await _ws.SendAsync(json);
 
-            string respJson = await _ws.ReceiveAsync();
-            return respJson;
+            return json;
         }
 
 
